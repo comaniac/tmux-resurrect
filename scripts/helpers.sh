@@ -2,6 +2,8 @@ default_resurrect_dir="$HOME/.tmux/resurrect/$(hostname)"
 resurrect_dir_option="@resurrect-dir"
 
 SUPPORTED_VERSION="1.9"
+_RESURRECT_DIR=""
+_RESURRECT_FILE_PATH=""
 
 d=$'\t'
 
@@ -94,14 +96,25 @@ pane_content_files_restore_from_archive() {
 # path helpers
 
 resurrect_dir() {
-	local path="$(get_tmux_option "$resurrect_dir_option" "$default_resurrect_dir")"
-	echo "${path/#\~/$HOME}" # expands tilde if used with @resurrect-dir
+	if [ -z "$_RESURRECT_DIR" ]; then
+		local path="$(get_tmux_option "$resurrect_dir_option" "$default_resurrect_dir")"
+		# expands tilde, $HOME and $HOSTNAME if used in @resurrect-dir
+		echo "$path" | sed "s,\$HOME,$HOME,g; s,\$HOSTNAME,$(hostname),g; s,\~,$HOME,g"
+	else
+		echo "$_RESURRECT_DIR"
+	fi
 }
+_RESURRECT_DIR="$(resurrect_dir)"
 
 resurrect_file_path() {
-	local timestamp="$(date +"%Y-%m-%dT%H:%M:%S")"
-	echo "$(resurrect_dir)/tmux_resurrect_${timestamp}.txt"
+	if [ -z "$_RESURRECT_FILE_PATH" ]; then
+		local timestamp="$(date +"%Y-%m-%dT%H:%M:%S")"
+		echo "$(resurrect_dir)/tmux_resurrect_${timestamp}.txt"
+	else
+		echo "$_RESURRECT_FILE_PATH"
+	fi
 }
+_RESURRECT_FILE_PATH="$(resurrect_file_path)"
 
 last_resurrect_file() {
 	echo "$(resurrect_dir)/last"
